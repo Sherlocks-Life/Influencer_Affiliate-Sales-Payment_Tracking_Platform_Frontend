@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getSocket } from "../socket";
+import { connectSocket } from "../socket";
 
 import { Bar } from "react-chartjs-2";
 import {
@@ -28,27 +28,43 @@ export function FinanceDashboard({ session }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchFinances = async () => {
-      try {
-        // Fetch finance data from your backend
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching finances:", error);
-        setLoading(false);
-      }
+    const token = session?.token;
+
+    // Connect socket with auth so backend can emit correct role-based data
+    const socket = token ? connectSocket(token) : null;
+
+    if (!socket) {
+      setLoading(false);
+      return;
+    }
+
+    const onFinanceUpdate = (data) => {
+      // Expecting backend to send finance data payload.
+      // We keep backward compatibility with existing state shape.
+      const nextFinances = Array.isArray(data) ? data : (data?.finances ?? []);
+      setFinances(nextFinances);
+
+      // If backend also sends stats, prefer it; otherwise compute a best-effort fallback.
+      const nextStats =
+        data?.stats ??
+        {
+          totalRevenue: nextFinances.reduce((sum, x) => sum + (Number(x.amount) || 0), 0),
+          totalPayouts: nextFinances.reduce((sum, x) => sum + (Number(x.payout) || 0), 0),
+          balance: 0,
+        };
+
+      setStats(nextStats);
+      setLoading(false);
     };
 
-    fetchFinances();
+    socket.on("finance-update", onFinanceUpdate);
 
-    const socket = getSocket();
-    socket.on("finance-update", (data) => {
-      setFinances(data);
-    });
-
+    // If socket already connected and backend emits immediately, handler above will run.
+    // We also avoid blocking UI indefinitely: show loading until first payload.
     return () => {
-      socket.off("finance-update");
+      socket.off("finance-update", onFinanceUpdate);
     };
-  }, []);
+  }, [session?.token]);
 
   if (loading) {
     return <div className="dashboard-loading">Loading finances...</div>;

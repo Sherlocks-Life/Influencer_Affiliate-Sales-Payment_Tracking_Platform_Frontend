@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getSocket } from "../socket";
+import { connectSocket } from "../socket";
 
 import { Line } from "react-chartjs-2";
 import {
@@ -31,27 +31,39 @@ export function InfluencerDashboard({ session }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchInfluencerData = async () => {
-      try {
-        // Fetch influencer data from your backend
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching influencer data:", error);
-        setLoading(false);
-      }
+    const token = session?.token;
+
+    // Connect socket with auth so backend can emit correct role-based data
+    const socket = token ? connectSocket(token) : null;
+
+    if (!socket) {
+      setLoading(false);
+      return;
+    }
+
+    const onInfluencerUpdate = (data) => {
+      const nextInfluencers = Array.isArray(data) ? data : (data?.influencers ?? []);
+
+      setInfluencers(nextInfluencers);
+
+      const nextStats =
+        data?.stats ??
+        {
+          totalFollowers: nextInfluencers.reduce((sum, x) => sum + (Number(x.followers) || 0), 0),
+          totalEarnings: nextInfluencers.reduce((sum, x) => sum + (Number(x.earnings) || 0), 0),
+          activePromotions: 0,
+        };
+
+      setStats(nextStats);
+      setLoading(false);
     };
 
-    fetchInfluencerData();
-
-    const socket = getSocket();
-    socket.on("influencer-update", (data) => {
-      setInfluencers(data);
-    });
+    socket.on("influencer-update", onInfluencerUpdate);
 
     return () => {
-      socket.off("influencer-update");
+      socket.off("influencer-update", onInfluencerUpdate);
     };
-  }, []);
+  }, [session?.token]);
 
   if (loading) {
     return <div className="dashboard-loading">Loading dashboard...</div>;
