@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { socket } from "../socket";
+import { getSocket } from "../socket";
 
 import { Line } from "react-chartjs-2";
 import {
@@ -43,6 +43,7 @@ export function InfluencerDashboard({ session }) {
 
     fetchInfluencerData();
 
+    const socket = getSocket();
     socket.on("influencer-update", (data) => {
       setInfluencers(data);
     });

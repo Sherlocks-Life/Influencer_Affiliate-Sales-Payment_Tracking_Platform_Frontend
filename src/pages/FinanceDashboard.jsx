@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { socket } from "../socket";
+import { getSocket } from "../socket";
 
 import { Bar } from "react-chartjs-2";
 import {
@@ -40,6 +40,7 @@ export function FinanceDashboard({ session }) {
 
     fetchFinances();
 
+    const socket = getSocket();
     socket.on("finance-update", (data) => {
       setFinances(data);
     });

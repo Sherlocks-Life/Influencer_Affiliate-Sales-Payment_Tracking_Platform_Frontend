@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { socket } from "../socket";
+import { getSocket } from "../socket";
 import { Bar, Line, Pie, Doughnut } from "react-chartjs-2";
 import {
   ArcElement,
@@ -121,6 +121,7 @@ export function AdminDashboard() {
   useEffect(() => {
     load();
     const reload = () => load();
+    const socket = getSocket();
     socket.on("sale.created", reload);
     socket.on("payment.updated", reload);
     return () => {
