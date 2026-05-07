@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import { socket } from "../socket";
 import { Bar, Line, Pie, Doughnut } from "react-chartjs-2";
 import {
   ArcElement,
@@ -15,8 +15,6 @@ import {
 import { api } from "../api";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Tooltip, Legend);
-
-const socket = io(import.meta.env.VITE_API_ROOT || "http://localhost:5000");
 
 export function AdminDashboard() {
   const [overview, setOverview] = useState(null);
