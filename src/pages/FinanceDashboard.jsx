@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { connectSocket } from "../socket";
-
+// import { connectSocket } from "../socket";
+import { getSocket } from "../socket";
 import { Bar } from "react-chartjs-2";
 import {
   BarElement,
@@ -27,17 +27,30 @@ export function FinanceDashboard({ session }) {
   const [stats, setStats] = useState({ totalRevenue: 0, totalPayouts: 0, balance: 0 });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = session?.token;
+  // useEffect(() => {
+  //   const token = session?.token;
 
     // Connect socket with auth so backend can emit correct role-based data
-    const socket = token ? connectSocket(token) : null;
+    // const socket = token ? connectSocket(token) : null;
 
-    if (!socket) {
-      setLoading(false);
-      return;
-    }
+    // if (!socket) {
+    //   setLoading(false);
+    //   return;
+    // }
 
+
+    useEffect(() => {
+    load();
+    const reload = () => load();
+    const socket = getSocket();
+    socket.on("sale.created", reload);
+    socket.on("payment.updated", reload);
+    return () => {
+      socket.off("sale.created", reload);
+      socket.off("payment.updated", reload);
+    };
+  }, []);
+  
     const onFinanceUpdate = (data) => {
       // Expecting backend to send finance data payload.
       // We keep backward compatibility with existing state shape.
