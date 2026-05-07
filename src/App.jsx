@@ -21,18 +21,33 @@ import { CheckoutPage } from "./pages/CheckoutPage.jsx";
 export default function App() {
   const location = useLocation();
 
-  const [session, setSession] = useState(() => {
-    const raw = localStorage.getItem("session");
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    try {
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  });
-
+  // ✅ LOAD SESSION ON FIRST LOAD
   useEffect(() => {
-    setAuthToken(session?.token || "");
+    try {
+      const raw = localStorage.getItem("session");
+      const parsed = raw ? JSON.parse(raw) : null;
+
+      setSession(parsed);
+
+      if (parsed?.token) {
+        setAuthToken(parsed.token);
+      }
+    } catch (err) {
+      console.log("Session parse error", err);
+      localStorage.removeItem("session");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ✅ KEEP AUTH HEADER SYNCED
+  useEffect(() => {
+    if (session?.token) {
+      setAuthToken(session.token);
+    }
   }, [session]);
 
   const onLogin = (next) => {
@@ -46,6 +61,16 @@ export default function App() {
     setAuthToken("");
   };
 
+  // ✅ LOADING STATE (prevents flicker + socket spam)
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        Loading...
+      </div>
+    );
+  }
+
+  // ✅ NOT LOGGED IN ROUTES
   if (!session) {
     return (
       <Routes>
@@ -55,16 +80,18 @@ export default function App() {
     );
   }
 
+  // ✅ ROLE DASHBOARD ROUTER
   const getDashboard = () => {
-    if (session.role === "admin") {
-      return <AdminDashboard session={session} />;
-    }
+    switch (session.role) {
+      case "admin":
+        return <AdminDashboard session={session} />;
 
-    if (session.role === "finance") {
-      return <FinanceDashboard session={session} />;
-    }
+      case "finance":
+        return <FinanceDashboard session={session} />;
 
-    return <InfluencerDashboard session={session} />;
+      default:
+        return <InfluencerDashboard session={session} />;
+    }
   };
 
   const roleClass =
@@ -77,11 +104,11 @@ export default function App() {
   return (
     <div className="app">
 
-      {/* BACKGROUND EFFECTS */}
+      {/* BACKGROUND */}
       <div className="bg-circle blue"></div>
       <div className="bg-circle purple"></div>
 
-      {/* HEADER */}
+      {/* NAVBAR */}
       <header className="navbar">
         <div className="navbar-left">
 
@@ -97,7 +124,7 @@ export default function App() {
 
         <div className="navbar-right">
 
-          {/* ROLE BADGE */}
+          {/* ROLE */}
           <div className={`role-badge ${roleClass}`}>
             {session.role === "admin" && <ShieldCheck size={15} />}
             {session.role === "finance" && <Wallet size={15} />}
@@ -105,18 +132,16 @@ export default function App() {
             {session.role.toUpperCase()}
           </div>
 
-          {/* DASHBOARD BUTTON */}
+          {/* DASHBOARD */}
           <Link
             to="/"
-            className={`nav-btn ${
-              location.pathname === "/" ? "active-link" : ""
-            }`}
+            className={`nav-btn ${location.pathname === "/" ? "active-link" : ""}`}
           >
             <LayoutDashboard size={18} />
             Dashboard
           </Link>
 
-          {/* LOGOUT BUTTON */}
+          {/* LOGOUT */}
           <button className="logout-btn" onClick={onLogout}>
             <LogOut size={18} />
             Logout
@@ -124,7 +149,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN */}
       <main className="main-container">
         <Routes>
           <Route path="/" element={getDashboard()} />
