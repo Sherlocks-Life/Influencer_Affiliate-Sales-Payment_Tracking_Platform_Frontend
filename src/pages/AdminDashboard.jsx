@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+
 import { Bar, Line, Pie, Doughnut } from "react-chartjs-2";
 import {
   ArcElement,
@@ -27,7 +27,7 @@ ChartJS.register(
   Filler
 );
 
-const socket = io(import.meta.env.VITE_API_ROOT || "http://localhost:5000");
+
 
 export function AdminDashboard() {
   const [overview, setOverview] = useState(null);
