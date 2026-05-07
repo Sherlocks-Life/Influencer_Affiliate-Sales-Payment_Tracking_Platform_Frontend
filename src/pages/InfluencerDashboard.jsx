@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+
 import { Line } from "react-chartjs-2";
 import {
   CategoryScale,
@@ -23,7 +23,6 @@ ChartJS.register(
   Legend
 );
 
-const socket = io(import.meta.env.VITE_API_ROOT || "http://localhost:5000");
 
 export function InfluencerDashboard({ session }) {
   const [influencers, setInfluencers] = useState([]);
